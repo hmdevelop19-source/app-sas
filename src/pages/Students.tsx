@@ -1,14 +1,14 @@
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Users, Search, Filter, CheckCircle2, XCircle, AlertCircle, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Students = () => {
+  const navigate = useNavigate();
   const students = [
-    { id: '1001', name: 'Budi Santoso', class: '10-A', alpha: 0, status: 'Aman' },
-    { id: '1002', name: 'Siti Aminah', class: '10-A', alpha: 1, status: 'Aman' },
-    { id: '1003', name: 'Joko Widodo', class: '10-B', alpha: 4, status: 'SP 1' },
-    { id: '1004', name: 'Dewi Lestari', class: '11-C', alpha: 7, status: 'SP 2' },
-    { id: '1005', name: 'Andi Maulana', class: '12-A', alpha: 0, status: 'Aman' },
+    { id: 1, name: 'Budi Santoso', nis: '2026001', class: '10-A', alpha: 1, status: 'Aman' },
+    { id: 2, name: 'Siti Aminah', nis: '2026002', class: '10-B', alpha: 4, status: 'SP 1' },
+    { id: 3, name: 'Joko Widodo', nis: '2026003', class: '11-A', alpha: 7, status: 'SP 2' },
   ];
 
   return (
@@ -16,10 +16,14 @@ const Students = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Data Siswa</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola data siswa dan pantau tingkat kehadiran.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola data demografi dan status kehadiran siswa.</p>
         </div>
-        <button className="bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-700 hover:to-sky-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2">
-          <Plus size={18} /> Tambah Siswa
+        <button 
+          onClick={() => navigate('/students/add')}
+          className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm shadow-sky-600/30 transition-all flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Tambah Siswa Baru
         </button>
       </div>
 
