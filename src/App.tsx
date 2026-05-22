@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import AddStudent from './pages/AddStudent';
+import Guardians from './pages/Guardians';
 import Warnings from './pages/Warnings';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="students" element={<Students />} />
           <Route path="students/add" element={<AddStudent />} />
+          <Route path="guardians" element={<Guardians />} />
           <Route path="warnings" element={<Warnings />} />
         </Route>
 

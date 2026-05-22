@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, AlertTriangle, LogOut, Menu, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Users, Contact, AlertTriangle, LogOut, Menu, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const AdminLayout = () => {
@@ -14,6 +14,7 @@ const AdminLayout = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Data Siswa', path: '/students', icon: Users },
+    { name: 'Data Wali', path: '/guardians', icon: Contact },
     { name: 'Surat Peringatan', path: '/warnings', icon: AlertTriangle },
   ];
 
