@@ -1,21 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
-import { ArrowLeft, Save, User, Users, MapPin, Info, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, User, Users, Info, Loader2 } from 'lucide-react';
 
 interface ParsedNikData {
   gender: string;
   date_of_birth: string;
   region: {
-    province: string;
-    regency: string;
-    district: string;
+    province: string | null;
+    province_code: string | null;
+    regency: string | null;
+    regency_code: string | null;
+    district: string | null;
+    district_code: string | null;
   };
+}
+
+interface RegionItem {
+  id: number;
+  code: string;
+  name: string;
 }
 
 const AddStudent = () => {
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+  // --- Lists ---
+  const [provinces, setProvinces] = useState<RegionItem[]>([]);
+  const [studentRegencies, setStudentRegencies] = useState<RegionItem[]>([]);
+  const [studentDistricts, setStudentDistricts] = useState<RegionItem[]>([]);
+  const [studentVillages, setStudentVillages] = useState<RegionItem[]>([]);
+  
+  const [guardianRegencies, setGuardianRegencies] = useState<RegionItem[]>([]);
+  const [guardianDistricts, setGuardianDistricts] = useState<RegionItem[]>([]);
+  const [guardianVillages, setGuardianVillages] = useState<RegionItem[]>([]);
 
   // --- Student State ---
   const [studentNik, setStudentNik] = useState('');
@@ -42,13 +61,29 @@ const AddStudent = () => {
   const [guardianVillage, setGuardianVillage] = useState('');
   const [isGuardianParsing, setIsGuardianParsing] = useState(false);
 
+  useEffect(() => {
+    fetch(`${API_URL}/regions/provinces`)
+      .then(res => res.json())
+      .then(data => setProvinces(data))
+      .catch(console.error);
+  }, [API_URL]);
+
+  const fetchRegions = async (type: 'regencies' | 'districts' | 'villages', code: string): Promise<RegionItem[]> => {
+    try {
+      const response = await fetch(`${API_URL}/regions/${type}/${code}`);
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  };
+
   const fetchNikData = async (nik: string): Promise<ParsedNikData | null> => {
     try {
       const response = await fetch(`${API_URL}/utils/parse-nik?nik=${nik}`);
       if (!response.ok) return null;
       return await response.json();
-    } catch (error) {
-      console.error('Error parsing NIK:', error);
+    } catch {
       return null;
     }
   };
@@ -63,9 +98,25 @@ const AddStudent = () => {
       if (data) {
         setStudentDob(data.date_of_birth || '');
         setStudentGender(data.gender || '');
-        setStudentProvince(data.region.province || '');
-        setStudentRegency(data.region.regency || '');
-        setStudentDistrict(data.region.district || '');
+        
+        if (data.region.province_code) {
+          setStudentProvince(data.region.province_code);
+          const regs = await fetchRegions('regencies', data.region.province_code);
+          setStudentRegencies(regs);
+          
+          if (data.region.regency_code) {
+            setStudentRegency(data.region.regency_code);
+            const dists = await fetchRegions('districts', data.region.regency_code);
+            setStudentDistricts(dists);
+            
+            if (data.region.district_code) {
+              setStudentDistrict(data.region.district_code);
+              const vills = await fetchRegions('villages', data.region.district_code);
+              setStudentVillages(vills);
+              setStudentVillage(''); // Clear village as it's not in NIK
+            }
+          }
+        }
       }
       setIsStudentParsing(false);
     }
@@ -81,12 +132,82 @@ const AddStudent = () => {
       if (data) {
         setGuardianDob(data.date_of_birth || '');
         setGuardianGender(data.gender || '');
-        setGuardianProvince(data.region.province || '');
-        setGuardianRegency(data.region.regency || '');
-        setGuardianDistrict(data.region.district || '');
+        
+        if (data.region.province_code) {
+          setGuardianProvince(data.region.province_code);
+          const regs = await fetchRegions('regencies', data.region.province_code);
+          setGuardianRegencies(regs);
+          
+          if (data.region.regency_code) {
+            setGuardianRegency(data.region.regency_code);
+            const dists = await fetchRegions('districts', data.region.regency_code);
+            setGuardianDistricts(dists);
+            
+            if (data.region.district_code) {
+              setGuardianDistrict(data.region.district_code);
+              const vills = await fetchRegions('villages', data.region.district_code);
+              setGuardianVillages(vills);
+              setGuardianVillage('');
+            }
+          }
+        }
       }
       setIsGuardianParsing(false);
     }
+  };
+
+  // Student Manual Changes
+  const handleStudentProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setStudentProvince(val);
+    setStudentRegency(''); setStudentDistrict(''); setStudentVillage('');
+    setStudentDistricts([]); setStudentVillages([]);
+    if (val) setStudentRegencies(await fetchRegions('regencies', val));
+    else setStudentRegencies([]);
+  };
+
+  const handleStudentRegencyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setStudentRegency(val);
+    setStudentDistrict(''); setStudentVillage('');
+    setStudentVillages([]);
+    if (val) setStudentDistricts(await fetchRegions('districts', val));
+    else setStudentDistricts([]);
+  };
+
+  const handleStudentDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setStudentDistrict(val);
+    setStudentVillage('');
+    if (val) setStudentVillages(await fetchRegions('villages', val));
+    else setStudentVillages([]);
+  };
+
+  // Guardian Manual Changes
+  const handleGuardianProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setGuardianProvince(val);
+    setGuardianRegency(''); setGuardianDistrict(''); setGuardianVillage('');
+    setGuardianDistricts([]); setGuardianVillages([]);
+    if (val) setGuardianRegencies(await fetchRegions('regencies', val));
+    else setGuardianRegencies([]);
+  };
+
+  const handleGuardianRegencyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setGuardianRegency(val);
+    setGuardianDistrict(''); setGuardianVillage('');
+    setGuardianVillages([]);
+    if (val) setGuardianDistricts(await fetchRegions('districts', val));
+    else setGuardianDistricts([]);
+  };
+
+  const handleGuardianDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setGuardianDistrict(val);
+    setGuardianVillage('');
+    if (val) setGuardianVillages(await fetchRegions('villages', val));
+    else setGuardianVillages([]);
   };
 
   return (
@@ -143,7 +264,7 @@ const AddStudent = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Lahir</label>
-                <input type="date" value={studentDob} readOnly className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 outline-none cursor-not-allowed" title="Terisi otomatis dari NIK" />
+                <input type="date" value={studentDob} readOnly className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 outline-none cursor-not-allowed" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Jenis Kelamin</label>
@@ -190,22 +311,34 @@ const AddStudent = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Provinsi</label>
-                <input type="text" value={studentProvince} onChange={e => setStudentProvince(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Terisi Otomatis..." />
+                <select value={studentProvince} onChange={handleStudentProvinceChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200">
+                  <option value="">-- Pilih Provinsi --</option>
+                  {provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Kabupaten / Kota</label>
-                <input type="text" value={studentRegency} onChange={e => setStudentRegency(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Terisi Otomatis..." />
+                <select value={studentRegency} onChange={handleStudentRegencyChange} disabled={!studentRegencies.length} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 disabled:opacity-50">
+                  <option value="">-- Pilih Kabupaten --</option>
+                  {studentRegencies.map(r => <option key={r.code} value={r.code}>{r.name}</option>)}
+                </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Kecamatan</label>
-                <input type="text" value={studentDistrict} onChange={e => setStudentDistrict(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Terisi Otomatis..." />
+                <select value={studentDistrict} onChange={handleStudentDistrictChange} disabled={!studentDistricts.length} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 disabled:opacity-50">
+                  <option value="">-- Pilih Kecamatan --</option>
+                  {studentDistricts.map(d => <option key={d.code} value={d.code}>{d.name}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Kelurahan / Desa</label>
-                <input type="text" value={studentVillage} onChange={e => setStudentVillage(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Input Manual" />
+                <select value={studentVillage} onChange={e => setStudentVillage(e.target.value)} disabled={!studentVillages.length} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 disabled:opacity-50">
+                  <option value="">-- Pilih Kelurahan --</option>
+                  {studentVillages.map(v => <option key={v.code} value={v.code}>{v.name}</option>)}
+                </select>
               </div>
             </div>
           </div>
@@ -278,22 +411,34 @@ const AddStudent = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Provinsi</label>
-                <input type="text" value={guardianProvince} onChange={e => setGuardianProvince(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Terisi Otomatis..." />
+                <select value={guardianProvince} onChange={handleGuardianProvinceChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200">
+                  <option value="">-- Pilih Provinsi --</option>
+                  {provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Kabupaten / Kota</label>
-                <input type="text" value={guardianRegency} onChange={e => setGuardianRegency(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Terisi Otomatis..." />
+                <select value={guardianRegency} onChange={handleGuardianRegencyChange} disabled={!guardianRegencies.length} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 disabled:opacity-50">
+                  <option value="">-- Pilih Kabupaten --</option>
+                  {guardianRegencies.map(r => <option key={r.code} value={r.code}>{r.name}</option>)}
+                </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Kecamatan</label>
-                <input type="text" value={guardianDistrict} onChange={e => setGuardianDistrict(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Terisi Otomatis..." />
+                <select value={guardianDistrict} onChange={handleGuardianDistrictChange} disabled={!guardianDistricts.length} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 disabled:opacity-50">
+                  <option value="">-- Pilih Kecamatan --</option>
+                  {guardianDistricts.map(d => <option key={d.code} value={d.code}>{d.name}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Kelurahan / Desa</label>
-                <input type="text" value={guardianVillage} onChange={e => setGuardianVillage(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200" placeholder="Input Manual" />
+                <select value={guardianVillage} onChange={e => setGuardianVillage(e.target.value)} disabled={!guardianVillages.length} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 disabled:opacity-50">
+                  <option value="">-- Pilih Kelurahan --</option>
+                  {guardianVillages.map(v => <option key={v.code} value={v.code}>{v.name}</option>)}
+                </select>
               </div>
             </div>
 
