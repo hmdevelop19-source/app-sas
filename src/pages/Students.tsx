@@ -1,15 +1,29 @@
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
-import { Users, Search, Filter, CheckCircle2, XCircle, AlertCircle, Plus } from 'lucide-react';
+import { Users, Search, Filter, CheckCircle2, XCircle, AlertCircle, Plus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Students = () => {
   const navigate = useNavigate();
-  const students = [
-    { id: 1, name: 'Budi Santoso', nis: '2026001', class: '10-A', alpha: 1, status: 'Aman' },
-    { id: 2, name: 'Siti Aminah', nis: '2026002', class: '10-B', alpha: 4, status: 'SP 1' },
-    { id: 3, name: 'Joko Widodo', nis: '2026003', class: '11-A', alpha: 7, status: 'SP 2' },
-  ];
+  const [students, setStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch(`${API_URL}/students`);
+        const result = await response.json();
+        setStudents(result.data || []);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStudents();
+  }, [API_URL]);
 
   return (
     <div className="space-y-6">
@@ -67,47 +81,64 @@ const Students = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 bg-white dark:bg-slate-800">
-              {students.map((student) => (
-                <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group">
-                  <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">{student.id}</td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400">
-                        {student.name.charAt(0)}
-                      </div>
-                      <span className="font-medium">{student.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">{student.class}</td>
-                  <td className="px-5 py-3.5">
-                    <span className={`font-semibold ${student.alpha > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {student.alpha} {student.alpha > 0 && 'Hari'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {student.status === 'Aman' ? (
-                      <Badge variant="success">Aman</Badge>
-                    ) : (
-                      <Badge variant="danger">{student.status}</Badge>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <button className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Detail</button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-500">
+                    <Loader2 className="animate-spin mx-auto h-6 w-6 mb-2 text-sky-500" />
+                    Memuat data siswa...
                   </td>
                 </tr>
-              ))}
+              ) : students.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-500">
+                    Belum ada data siswa.
+                  </td>
+                </tr>
+              ) : (
+                students.map((student) => {
+                  const spStatus = student.warnings?.length > 0 ? `SP ${student.warnings[0].sp_level}` : 'Aman';
+                  return (
+                    <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group">
+                      <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">{student.nis}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                            {student.name.charAt(0)}
+                          </div>
+                          <span className="font-medium">{student.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">Kelas 10</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`font-semibold ${student.alpha_count > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                          {student.alpha_count} {student.alpha_count > 0 && 'Hari'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {spStatus === 'Aman' ? (
+                          <Badge variant="success">Aman</Badge>
+                        ) : (
+                          <Badge variant="danger">{spStatus}</Badge>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <button className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Detail</button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
         
         {/* Pagination placeholder */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-          <span>Menampilkan 1 hingga 5 dari 1,240 entri</span>
+          <span>Menampilkan total {students.length} entri</span>
           <div className="flex gap-1">
             <button className="px-3 py-1 border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50" disabled>Sebelumnya</button>
             <button className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors">1</button>
-            <button className="px-3 py-1 border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">2</button>
-            <button className="px-3 py-1 border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Selanjutnya</button>
+            <button className="px-3 py-1 border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50" disabled>Selanjutnya</button>
           </div>
         </div>
       </Card>

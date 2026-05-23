@@ -1,13 +1,27 @@
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
-import { FileText, Download, CheckCircle2, Clock } from 'lucide-react';
+import { FileText, Download, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 
 const Warnings = () => {
-  const warnings = [
-    { id: 'SP-26-001', student: 'Joko Widodo', class: '10-B', level: 'SP 1', date: '12 Okt 2026', signed: true },
-    { id: 'SP-26-002', student: 'Dewi Lestari', class: '11-C', level: 'SP 2', date: '15 Okt 2026', signed: false },
-    { id: 'SP-26-003', student: 'Bima Sakti', class: '12-A', level: 'SP 3', date: '20 Okt 2026', signed: false },
-  ];
+  const [warnings, setWarnings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+  useEffect(() => {
+    const fetchWarnings = async () => {
+      try {
+        const response = await fetch(`${API_URL}/students/warnings`);
+        const result = await response.json();
+        setWarnings(result.data || []);
+      } catch (error) {
+        console.error('Error fetching warnings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchWarnings();
+  }, [API_URL]);
 
   return (
     <div className="space-y-6">
@@ -37,42 +51,57 @@ const Warnings = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 bg-white dark:bg-slate-800">
-              {warnings.map((warn) => (
-                <tr key={warn.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group">
-                  <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">
-                    <span className="font-mono text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-400">
-                      {warn.id}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 font-medium">{warn.student}</td>
-                  <td className="px-5 py-3.5">{warn.class}</td>
-                  <td className="px-5 py-3.5">
-                    <Badge variant={warn.level === 'SP 1' ? 'warning' : 'danger'}>
-                      {warn.level}
-                    </Badge>
-                  </td>
-                  <td className="px-5 py-3.5">{warn.date}</td>
-                  <td className="px-5 py-3.5">
-                    {warn.signed ? (
-                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full w-max">
-                        <CheckCircle2 size={14} />
-                        Ditandatangani
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full w-max">
-                        <Clock size={14} />
-                        Menunggu TTD
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <button className="inline-flex items-center gap-1.5 text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium px-3 py-1.5 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors">
-                      <FileText size={16} />
-                      Cetak PDF
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-8 text-center text-slate-500">
+                    <Loader2 className="animate-spin mx-auto h-6 w-6 mb-2 text-sky-500" />
+                    Memuat data surat peringatan...
                   </td>
                 </tr>
-              ))}
+              ) : warnings.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-8 text-center text-slate-500">
+                    Belum ada surat peringatan.
+                  </td>
+                </tr>
+              ) : (
+                warnings.map((warn) => (
+                  <tr key={warn.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group">
+                    <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">
+                      <span className="font-mono text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-400">
+                        SP-{warn.id}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 font-medium">{warn.student?.name}</td>
+                    <td className="px-5 py-3.5">{warn.student?.schoolClass?.name || 'Kelas 10'}</td>
+                    <td className="px-5 py-3.5">
+                      <Badge variant={warn.sp_level === 1 ? 'warning' : 'danger'}>
+                        SP {warn.sp_level}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3.5">{new Date(warn.issued_at).toLocaleDateString('id-ID')}</td>
+                    <td className="px-5 py-3.5">
+                      {warn.signed_by_guardian ? (
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full w-max">
+                          <CheckCircle2 size={14} />
+                          Ditandatangani
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full w-max">
+                          <Clock size={14} />
+                          Menunggu TTD
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <button className="inline-flex items-center gap-1.5 text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium px-3 py-1.5 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors">
+                        <FileText size={16} />
+                        Cetak PDF
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,38 +1,27 @@
-import { Contact, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Contact, Search, Filter, Loader2 } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
 
 const Guardians = () => {
-  // Dummy data for presentation
-  const guardians = [
-    { 
-      id: 1, 
-      nkk: '3273010000000001', 
-      nik: '3273010101800001', 
-      name: 'Ahmad Suhendra', 
-      education: 'S1 / D4',
-      occupation: 'Pegawai Negeri Sipil',
-      student: 'Budi Santoso (10-A)'
-    },
-    { 
-      id: 2, 
-      nkk: '3527120000000002', 
-      nik: '3527121904980001', 
-      name: 'Bambang Pamungkas', 
-      education: 'SLTA / Sederajat',
-      occupation: 'Wiraswasta',
-      student: 'Siti Aminah (10-B)'
-    },
-    { 
-      id: 3, 
-      nkk: '3171010000000003', 
-      nik: '3171010505850002', 
-      name: 'Siti Rohmah', 
-      education: 'D3',
-      occupation: 'Karyawan Swasta',
-      student: 'Joko Widodo (11-A)'
-    },
-  ];
+  const [guardians, setGuardians] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+  useEffect(() => {
+    const fetchGuardians = async () => {
+      try {
+        const response = await fetch(`${API_URL}/guardians`);
+        const result = await response.json();
+        setGuardians(result.data || []);
+      } catch (error) {
+        console.error('Error fetching guardians:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchGuardians();
+  }, [API_URL]);
 
   return (
     <div className="space-y-6">
@@ -70,31 +59,54 @@ const Guardians = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {guardians.map((guardian) => (
-                <tr key={guardian.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0">
-                        <Contact size={20} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-800 dark:text-slate-200">{guardian.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">NIK: {guardian.nik}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-mono text-sm text-slate-600 dark:text-slate-300">{guardian.nkk}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{guardian.occupation}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{guardian.education}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge variant="primary">{guardian.student}</Badge>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                    <Loader2 className="animate-spin mx-auto h-6 w-6 mb-2 text-sky-500" />
+                    Memuat data wali...
                   </td>
                 </tr>
-              ))}
+              ) : guardians.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                    Belum ada data wali.
+                  </td>
+                </tr>
+              ) : (
+                guardians.map((guardian) => (
+                  <tr key={guardian.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0">
+                          <Contact size={20} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">{guardian.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">NIK: {guardian.nik}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-sm text-slate-600 dark:text-slate-300">{guardian.nkk || '-'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-slate-700 dark:text-slate-300">{guardian.occupation?.name || '-'}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{guardian.education?.name || '-'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      {guardian.students?.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {guardian.students.map((s: any) => (
+                            <Badge key={s.id} variant="primary">{s.name}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-sm">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

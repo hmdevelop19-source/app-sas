@@ -71,6 +71,9 @@ const AddStudent = () => {
   const [studentVillage, setStudentVillage] = useState('');
   const [isStudentParsing, setIsStudentParsing] = useState(false);
 
+  // --- UI State ---
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     fetch(`${API_URL}/regions/provinces`).then(res => res.json()).then(setProvinces).catch(console.error);
     fetch(`${API_URL}/master/educations`).then(res => res.json()).then(setEducations).catch(console.error);
@@ -242,6 +245,56 @@ const AddStudent = () => {
     setGuardianVillages(val ? await fetchRegions('villages', val) : []);
   };
 
+  const handleSave = async () => {
+    if (!guardianNik || !guardianName || !studentNik || !studentName || !studentVillage) {
+      alert('Mohon lengkapi NIK Wali, Nama Wali, NIK Siswa, Nama Siswa, dan Kelurahan Siswa!');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        guardian_nkk: guardianNkk,
+        guardian_nik: guardianNik,
+        guardian_name: guardianName,
+        guardian_phone: guardianPhone,
+        guardian_dob: guardianDob,
+        guardian_gender: guardianGender,
+        guardian_education_id: guardianEducationId,
+        guardian_occupation_id: guardianOccupationId,
+
+        student_nik: studentNik,
+        student_name: studentName,
+        student_pob: studentPob,
+        student_dob: studentDob,
+        student_gender: studentGender,
+        student_address: studentAddress,
+        student_village_code: studentVillage
+      };
+
+      const res = await fetch(`${API_URL}/students`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert('Data siswa berhasil disimpan!');
+        navigate('/students');
+      } else {
+        const errorData = await res.json();
+        alert('Gagal menyimpan data: ' + (errorData.message || 'Kesalahan server'));
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan jaringan.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
@@ -254,9 +307,9 @@ const AddStudent = () => {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Lengkapi data demografi (dimulai dari Wali).</p>
           </div>
         </div>
-        <button className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm shadow-sky-600/30 transition-all flex items-center gap-2">
-          <Save size={18} />
-          Simpan Data
+        <button onClick={handleSave} disabled={isSaving} className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm shadow-sky-600/30 transition-all flex items-center gap-2 disabled:opacity-50">
+          {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          {isSaving ? 'Menyimpan...' : 'Simpan Data'}
         </button>
       </div>
 
