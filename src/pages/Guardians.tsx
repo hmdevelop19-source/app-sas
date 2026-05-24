@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Contact, Search, Filter, Loader2, Edit } from 'lucide-react';
+import { Contact, Search, Filter, Loader2, Edit, Download, Upload, FileText } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 const Guardians = () => {
   const navigate = useNavigate();
   const [guardians, setGuardians] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -27,12 +30,114 @@ const Guardians = () => {
     fetchGuardians();
   }, [API_URL]);
 
+  const handleExport = () => {
+    const exportData = guardians.map((g, index) => ({
+      'No': index + 1,
+      'Nama Lengkap Wali': g.name,
+      'NIK Wali': g.nik || '-',
+      'Nomor Telepon/WA': g.phone || '-',
+      'Status Hubungan': g.relationship || 'Wali',
+      'Pendidikan': g.education?.name || '-',
+      'Pekerjaan': g.occupation?.name || '-',
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data Wali");
+    XLSX.writeFile(wb, "Data_Wali.xlsx");
+  };
+
+  const handleDownloadTemplate = () => {
+    const templateData = [{
+      'Nama Lengkap Wali': 'Contoh Wali',
+      'NIK Wali': '3273000000000002',
+      'Nomor Telepon/WA': '081234567890',
+      'Status Hubungan (Ayah/Ibu/Wali)': 'Ayah',
+    }];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template Wali");
+    XLSX.writeFile(wb, "Template_Wali.xlsx");
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        const formattedData = data.map((row: any) => ({
+          name: row['Nama Lengkap Wali'],
+          nik: row['NIK Wali'] ? String(row['NIK Wali']) : null,
+          phone: row['Nomor Telepon/WA'] ? String(row['Nomor Telepon/WA']) : null,
+          relationship: row['Status Hubungan (Ayah/Ibu/Wali)'] || 'Wali',
+        }));
+
+        const response = await fetch(`${API_URL}/guardians/import`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ data: formattedData }),
+        });
+        
+        const result = await response.json();
+        alert(result.message || 'Proses import selesai.');
+        fetchGuardians();
+      } catch (error) {
+        console.error(error);
+        alert('Gagal memproses file Excel. Pastikan format sesuai template.');
+      } finally {
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Data Wali Siswa</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola data demografi wali dan orang tua siswa.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <input 
+            type="file" 
+            accept=".xlsx, .xls" 
+            className="hidden" 
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+          <button 
+            onClick={handleDownloadTemplate}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors text-sm flex items-center gap-2"
+          >
+            <FileText size={18} /> Template
+          </button>
+          <button 
+            onClick={handleExport}
+            className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-500/20 font-medium transition-colors text-sm flex items-center gap-2"
+          >
+            <Download size={18} /> Export
+          </button>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className="px-4 py-2 bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 text-sky-700 dark:text-sky-400 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-500/20 font-medium transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            {isImporting ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />} 
+            Import
+          </button>
         </div>
       </div>
 
