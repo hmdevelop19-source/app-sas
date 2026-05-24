@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
-import { Users, Search, Filter, CheckCircle2, XCircle, AlertCircle, Plus, Loader2 } from 'lucide-react';
+import { Users, Search, Filter, CheckCircle2, XCircle, AlertCircle, Plus, Loader2, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Students = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch(`${API_URL}/students`);
+      const result = await response.json();
+      setStudents(result.data || []);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await fetch(`${API_URL}/students`);
-        const result = await response.json();
-        setStudents(result.data || []);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchStudents();
   }, [API_URL]);
 
@@ -122,7 +124,12 @@ const Students = () => {
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-right">
-                        <button className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Detail</button>
+                        <button 
+                          onClick={() => navigate(`/students/${student.id}`)}
+                          className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium px-3 py-1.5 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors inline-flex items-center gap-1.5 opacity-0 group-hover:opacity-100"
+                        >
+                          <FileText size={16} /> Detail
+                        </button>
                       </td>
                     </tr>
                   );

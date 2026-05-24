@@ -43,9 +43,9 @@ const AddStudent = () => {
   const [guardianVillages, setGuardianVillages] = useState<RegionItem[]>([]);
 
   // --- Guardian State (Placed First) ---
-  const [guardianNkk, setGuardianNkk] = useState('');
   const [guardianNik, setGuardianNik] = useState('');
   const [guardianName, setGuardianName] = useState('');
+  const [guardianRelationship, setGuardianRelationship] = useState('Ayah');
   const [guardianPhone, setGuardianPhone] = useState('');
   const [guardianDob, setGuardianDob] = useState('');
   const [guardianGender, setGuardianGender] = useState('');
@@ -148,7 +148,6 @@ const AddStudent = () => {
       if (checkData && checkData.exists) {
         // Auto-fill existing guardian
         const g = checkData.data;
-        setGuardianNkk(g.nkk);
         setGuardianName(g.name);
         setGuardianPhone(g.phone || '');
         setGuardianDob(g.date_of_birth);
@@ -254,9 +253,9 @@ const AddStudent = () => {
     setIsSaving(true);
     try {
       const payload = {
-        guardian_nkk: guardianNkk,
         guardian_nik: guardianNik,
         guardian_name: guardianName,
+        guardian_relationship: guardianRelationship,
         guardian_phone: guardianPhone,
         guardian_dob: guardianDob,
         guardian_gender: guardianGender,
@@ -334,23 +333,23 @@ const AddStudent = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">NIK Wali (Penting)</label>
               <div className="relative">
-                <input 
-                  type="text" value={guardianNik} onChange={handleGuardianNikChange}
-                  placeholder="Masukkan 16 digit NIK Wali..."
-                  className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border ${isGuardianLocked ? 'border-emerald-300 dark:border-emerald-700 focus:ring-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:ring-sky-500'} rounded-lg focus:ring-2 outline-none transition-all dark:text-slate-200`}
-                />
+                <input type="text" value={guardianNik} onChange={handleGuardianNikChange} readOnly={isGuardianLocked} placeholder="16 Digit NIK..." className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 font-mono text-sm ${isGuardianLocked ? 'opacity-70 cursor-not-allowed' : ''}`} />
                 {isGuardianParsing && <Loader2 className="absolute right-3 top-3 animate-spin text-amber-500" size={18} />}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Nomor Kartu Keluarga (NKK)</label>
-              <input type="text" value={guardianNkk} onChange={e => setGuardianNkk(e.target.value.replace(/\D/g, '').slice(0, 16))} readOnly={isGuardianLocked} placeholder="16 Digit NKK..." className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 font-mono text-sm ${isGuardianLocked ? 'opacity-70 cursor-not-allowed' : ''}`} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Nama Lengkap Wali</label>
+              <input type="text" value={guardianName} onChange={e => setGuardianName(e.target.value)} readOnly={isGuardianLocked} className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 ${isGuardianLocked ? 'opacity-70 cursor-not-allowed' : ''}`} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Nama Lengkap Wali</label>
-              <input type="text" value={guardianName} onChange={e => setGuardianName(e.target.value)} readOnly={isGuardianLocked} className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 ${isGuardianLocked ? 'opacity-70 cursor-not-allowed' : ''}`} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Status Hubungan</label>
+              <select value={guardianRelationship} onChange={e => setGuardianRelationship(e.target.value)} disabled={isGuardianLocked} className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-slate-200 ${isGuardianLocked ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                <option value="Ayah">Ayah</option>
+                <option value="Ibu">Ibu</option>
+                <option value="Wali">Wali</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

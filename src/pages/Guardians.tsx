@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Contact, Search, Filter, Loader2 } from 'lucide-react';
+import { Contact, Search, Filter, Loader2, Edit } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
+import { useNavigate } from 'react-router-dom';
 
 const Guardians = () => {
+  const navigate = useNavigate();
   const [guardians, setGuardians] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
+  const fetchGuardians = async () => {
+    try {
+      const response = await fetch(`${API_URL}/guardians`);
+      const result = await response.json();
+      setGuardians(result.data || []);
+    } catch (error) {
+      console.error('Error fetching guardians:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchGuardians = async () => {
-      try {
-        const response = await fetch(`${API_URL}/guardians`);
-        const result = await response.json();
-        setGuardians(result.data || []);
-      } catch (error) {
-        console.error('Error fetching guardians:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchGuardians();
   }, [API_URL]);
 
@@ -53,9 +57,10 @@ const Guardians = () => {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Wali / Orang Tua</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Nomor Kartu Keluarga</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Status Hubungan</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Pendidikan & Pekerjaan</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Terkait Siswa</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -87,7 +92,7 @@ const Guardians = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-mono text-sm text-slate-600 dark:text-slate-300">{guardian.nkk || '-'}</span>
+                      <span className="font-medium text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{guardian.relationship || 'Wali'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm text-slate-700 dark:text-slate-300">{guardian.occupation?.name || '-'}</p>
@@ -103,6 +108,14 @@ const Guardians = () => {
                       ) : (
                         <span className="text-slate-400 text-sm">-</span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => navigate(`/guardians/${guardian.id}`)}
+                        className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 font-medium px-3 py-1.5 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <Edit size={16} /> Detail
+                      </button>
                     </td>
                   </tr>
                 ))
