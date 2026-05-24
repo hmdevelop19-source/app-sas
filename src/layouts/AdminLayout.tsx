@@ -13,6 +13,7 @@ const AdminLayout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Data Guru', path: '/teachers', icon: Users },
     { name: 'Data Siswa', path: '/students', icon: Users },
     { name: 'Data Wali', path: '/guardians', icon: Contact },
     { name: 'Surat Peringatan', path: '/warnings', icon: AlertTriangle },
